@@ -10,12 +10,12 @@ RF24 radio(2, 3); // CE, CSN
 const byte address[6] = "42424";
 
 // defines pins numbers for stepper motors
-const int stepPin0 = 5; //second axis first stepper
-const int dirPin0 = 4; //second axis first stepper
-const int enable0 = 6; //second axis first stepper
-const int stepPin1 = 9; //second axis second stepper
-const int dirPin1 = 8; //second axis second stepper
-const int enable1 = 10; //second axis second stepper
+const int stepPin0 = 5; //second axis first stepper left
+const int dirPin0 = 4; //second axis first stepper left
+const int enable0 = 6; //second axis first stepper left
+const int stepPin1 = 9; //second axis second stepper right
+const int dirPin1 = 8; //second axis second stepper right
+const int enable1 = 10; //second axis second stepper right
 const int stepPin2 = 16; //first axis stepper
 const int dirPin2 = 15; //first axis stepper
 const int enable2 = 14; //first axis stepper
