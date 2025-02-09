@@ -1,34 +1,34 @@
-#include <Wire.h>
-#include <MPU6050.h>
 #include <SPI.h>
 #include <nRF24L01.h>
 #include <RF24.h>
 #include <Servo.h>
 
-RF24 radio(2, 3); // CE, CSN
-
-const byte address[6] = "42424";
-
-// defines pins numbers for stepper motors
-const int stepPin0 = 5; //second axis first stepper left
-const int dirPin0 = 4; //second axis first stepper left
-const int enable0 = 6; //second axis first stepper left
-const int stepPin1 = 9; //second axis second stepper right
-const int dirPin1 = 8; //second axis second stepper right
-const int enable1 = 10; //second axis second stepper right
-const int stepPin2 = 16; //first axis stepper
-const int dirPin2 = 15; //first axis stepper
-const int enable2 = 14; //first axis stepper
 Servo servo1;
 Servo servo2;
 
-MPU6050 sensor;
-// Initialize previous gyro rate, time and angular displacement
-double prevGyroRateX = 0;
-unsigned long prevTime = 0;
-double prevAngularDisplacement = 0;
+// Stepper Motor Driver DM542
+const int stepPin0 = 5; // second axis first stepper left
+const int dirPin0 = 4; // second axis first stepper left
+const int enable0 = 6; // second axis first stepper left
+const int stepPin1 = 9; // second axis second stepper right
+const int dirPin1 = 8; // second axis second stepper right
+const int enable1 = 10; // second axis second stepper right
+const int stepPin2 = 16; // first axis stepper
+const int dirPin2 = 15; // first axis stepper
+const int enable2 = 14; // first axis stepper
+const int stepPin3 = 24; // fourth stepper motor (TMC2208 Step pin)
+const int dirPin3 = 25; // fourth stepper motor (TMC2208 Direction pin)
+const int enable3 = 26; // fourth stepper motor (TMC2208 Enable pin)
+const int ms1Pin = 27;  // MS1 pin for microstepping
+const int ms2Pin = 28;  // MS2 pin for microstepping
 
-// Max size of this struct is 32 bytes - NRF24L01 buffer limit
+RF24 radio(2, 3); // CE, CSN
+const byte address[6] = "42424";
+
+// Joystick deadzone
+#define JOYSTICK_DEADZONE 50
+
+// Data structure for receiving remote data
 struct Data_Package {
   int mapX;
   int mapY;
@@ -42,571 +42,110 @@ struct Data_Package {
 Data_Package data;
 
 void setup() {
-  servo1.attach(22); //first servo trigger
-  servo2.attach(23); //secind servo trigger
+  Serial.begin(115200);
   radio.begin();
   radio.openReadingPipe(0, address);
   radio.setPALevel(RF24_PA_MIN);
   radio.startListening();
-  Wire.begin();
-  Serial.begin(9600);
+
   // Sets the two pins as Outputs for stepper motor
-  pinMode(stepPin0,OUTPUT); //second axis first stepper
-  pinMode(dirPin0,OUTPUT); //second axis first stepper
-  pinMode(stepPin1,OUTPUT); //second axis second stepper
-  pinMode(dirPin1,OUTPUT); //second axis second stepper
-  pinMode(enable0,OUTPUT); //second axis first stepper
-  pinMode(enable1,OUTPUT); //second axis second stepper
-  pinMode(stepPin2,OUTPUT); //first axis stepper
-  pinMode(dirPin2,OUTPUT); //first axis stepper
-  digitalWrite(enable0, LOW); //second axis first stepper
-  digitalWrite(enable1, LOW); //second axis second stepper
-  digitalWrite(enable2, LOW); //first axis stepper
-  sensor.initialize();
-  if (sensor.testConnection()) {
-    Serial.println("MPU6050 connection successful");
-  } else {
-    Serial.println("MPU6050 connection failed");
-  }
+  pinMode(stepPin0, OUTPUT);
+  pinMode(dirPin0, OUTPUT);
+  pinMode(enable0, OUTPUT);
+  pinMode(stepPin1, OUTPUT);
+  pinMode(dirPin1, OUTPUT);
+  pinMode(enable1, OUTPUT);
+  pinMode(stepPin2, OUTPUT);
+  pinMode(dirPin2, OUTPUT);
+  pinMode(enable2, OUTPUT);
+  pinMode(stepPin3, OUTPUT);
+  pinMode(dirPin3, OUTPUT);
+  pinMode(enable3, OUTPUT);
+
+  // Set microstepping pins as outputs
+  pinMode(ms1Pin, OUTPUT);
+  pinMode(ms2Pin, OUTPUT);
+
+  // Enable all motors
+  digitalWrite(enable0, LOW); // Enable second axis first stepper
+  digitalWrite(enable1, LOW); // Enable second axis second stepper
+  digitalWrite(enable2, LOW); // Enable first axis stepper
+  digitalWrite(enable3, LOW); // Enable fourth stepper motor
+
+  // Initialize servos
+  servo1.attach(22); // first servo trigger
+  servo2.attach(23); // second servo trigger
+
+  // Set initial microstepping mode (e.g., eighth step)
+  setMicrostepping(HIGH, LOW);
 }
 
 void loop() {
+  unsigned long currentTime = micros();
+
+  // Read data from remote
   if (radio.available()) {
     radio.read(&data, sizeof(Data_Package));
-    int16_t ax, ay, az;
-    int16_t gx, gy, gz;
-    // Read raw accel/gyro measurements from device
-    sensor.getMotion6(&ax, &ay, &az, &gx, &gy, &gz);
-  
-    // Convert gyroscope data to degrees/s
-    double gyroRateX = gx / 131.0;
-  
-    // Calculate the time elapsed since the last measurement
-    unsigned long currentTime = micros();
-    double deltaTime = (currentTime - prevTime) / 1000000.0; // Convert to seconds
-  
-    // Calculate the angular acceleration
-    double angularAccelerationX = (gyroRateX - prevGyroRateX) / deltaTime;
-  
-    // Store the current gyro rate and time for the next loop iteration
-    prevGyroRateX = gyroRateX;
-    prevTime = currentTime;
-  
-    // Calculate angular displacements
-    double angularDisplacement = (0.5 * angularAccelerationX * (deltaTime * deltaTime)) * (180 / 3.14);
-  
-    // Calculate weighted average of current and previous angular displacements
-    double smoothedAngularDisplacement = 0.7 * angularDisplacement + 0.3 * prevAngularDisplacement;
-  
-    // Store the current angular displacement for the next loop iteration
-    prevAngularDisplacement = angularDisplacement;
-  
-    // Calculate number of steps to counter angular displacement
-    double numberofsteps = (smoothedAngularDisplacement / 360.0) * 200;
-    numberofsteps = max(numberofsteps, 1); // Ensure at least one step
-  
-    // Calculate delay between steps
-    double delayTime = (deltaTime / abs(numberofsteps)) * 1000;
-    delayTime = constrain(delayTime, 500, 2000); // Ensure delay time is between 500 and 2000 microseconds
-  
-    Serial.print("Gyro rate:");
-    Serial.println(gyroRateX);
-  
-    if ((gyroRateX > 5.0) && (((data.mapX >= -50) && (data.mapX <= 50)) && ((data.mapY >= -50) && (data.mapY <= 50)) && (data.megumin_button == LOW))) //joystick in the middle and button not pressed right with stabilization
-    {
-      servo1.write(0);
-      servo2.write(180);
-      Serial.print("relay off");
-      Serial.print("\n");
-      // Code to execute if a is positive
-      digitalWrite(dirPin0,HIGH); //Rotate down
-      double adjustedDelayTime = delayTime * 0.8; // Reduce delay time by 20%
-      for(int x = 0; x < abs(numberofsteps); x++) // controls the number of steps
-      {
-        digitalWrite(stepPin0,HIGH);
-        delayMicroseconds(adjustedDelayTime); // controls the delay between steps
-        digitalWrite(stepPin0,LOW);
-        delayMicroseconds(adjustedDelayTime); // controls the delay between steps
+
+    // Debugging received data
+    Serial.print("Received mapX: "); Serial.println(data.mapX);
+    Serial.print("Received mapY: "); Serial.println(data.mapY);
+
+    int speedX = map(abs(data.mapX), 0, 512, 10000, 200); // Map speed based on joystick X input
+    int speedY = map(abs(data.mapY), 0, 512, 5000, 200); // Map speed based on joystick Y input
+
+    if (((data.mapX >= -JOYSTICK_DEADZONE) && (data.mapX <= JOYSTICK_DEADZONE)) && ((data.mapY >= -JOYSTICK_DEADZONE) && (data.mapY <= JOYSTICK_DEADZONE))) {
+      if (data.megumin_button == HIGH) {
+        servo1.write(0);
+        servo2.write(180);
+        Serial.println("relay off");
+      } else {
+        servo1.write(90);
+        servo2.write(90);
+        Serial.println("relay on");
       }
-      digitalWrite(dirPin1,LOW); //Rotate down
-      for(int x = 0; x < abs(numberofsteps); x++) // controls the number of steps
-      {
-        digitalWrite(stepPin1,HIGH);
-        delayMicroseconds(adjustedDelayTime); // controls the delay between steps
-        digitalWrite(stepPin1,LOW);
-        delayMicroseconds(adjustedDelayTime); // controls the delay between steps
+    } else {
+      if (data.mapX > JOYSTICK_DEADZONE) {
+        Serial.println("Joystick Right");
+        digitalWrite(dirPin2, LOW); // Rotate left
+        stepMotor(stepPin2, speedX);
+      } else if (data.mapX < -JOYSTICK_DEADZONE) {
+        Serial.println("Joystick Left");
+        digitalWrite(dirPin2, HIGH); // Rotate right
+        stepMotor(stepPin2, speedX);
+      }
+
+      if (data.mapY > JOYSTICK_DEADZONE) {
+        Serial.println("Joystick Down");
+        digitalWrite(dirPin0, LOW); // Rotate up left motor
+        digitalWrite(dirPin1, LOW); // Rotate up right motor
+        digitalWrite(dirPin3, LOW); // Rotate fourth motor
+        stepMotor(stepPin0, speedY);
+        stepMotor(stepPin1, speedY);
+        stepMotor(stepPin3, speedY);
+      } else if (data.mapY < -JOYSTICK_DEADZONE) {
+        Serial.println("Joystick Up");
+        digitalWrite(dirPin0, HIGH); // Rotate down left motor
+        digitalWrite(dirPin1, HIGH); // Rotate down right motor
+        digitalWrite(dirPin3, HIGH); // Rotate fourth motor
+        stepMotor(stepPin0, speedY);
+        stepMotor(stepPin1, speedY);
+        stepMotor(stepPin3, speedY);
       }
     }
-    else if ((gyroRateX < -10.0) && (((data.mapX >= -50) && (data.mapX <= 50)) && ((data.mapY >= -50) && (data.mapY <= 50)) && (data.megumin_button == LOW))) //joystick in the middle and button not pressed right with stabilization
-    {
-      servo1.write(0);
-      servo2.write(180);
-      Serial.print("relay off");
-      Serial.print("\n");
-      digitalWrite(dirPin0,LOW); //Rotate up
-      double adjustedDelayTime = delayTime * 0.8; // Reduce delay time by 20%
-      for(int x = 0; x < abs(numberofsteps); x++) // controls the number of steps
-      {
-        digitalWrite(stepPin0,HIGH);
-        delayMicroseconds(adjustedDelayTime); // controls the delay between steps
-        digitalWrite(stepPin0,LOW);
-        delayMicroseconds(adjustedDelayTime); // controls the delay between steps
-      }
-      digitalWrite(dirPin1,HIGH); //Rotate up
-      for(int x = 0; x < abs(numberofsteps); x++) // controls the number of steps
-      {
-        digitalWrite(stepPin1,HIGH);
-        delayMicroseconds(adjustedDelayTime); // controls the delay between steps
-        digitalWrite(stepPin1,LOW);
-        delayMicroseconds(adjustedDelayTime); // controls the delay between steps
-      }
-    }
-    else if ((gyroRateX > 5.0) && (((data.mapX >= -50) && (data.mapX <= 50)) && ((data.mapY >= -50) && (data.mapY <= 50)) && (data.megumin_button == HIGH))) //joystick in the middle and button pressed right with stabilization
-    {
-      servo1.write(90);
-      servo2.write(90);
-      Serial.print("relay off");
-      Serial.print("\n");
-      // Code to execute if a is positive
-      digitalWrite(dirPin0,HIGH); //Rotate down
-      double adjustedDelayTime = delayTime * 0.8; // Reduce delay time by 20%
-      for(int x = 0; x < abs(numberofsteps); x++) // controls the number of steps
-      {
-        digitalWrite(stepPin0,HIGH);
-        delayMicroseconds(adjustedDelayTime); // controls the delay between steps
-        digitalWrite(stepPin0,LOW);
-        delayMicroseconds(adjustedDelayTime); // controls the delay between steps
-      }
-      digitalWrite(dirPin1,LOW); //Rotate down
-      for(int x = 0; x < abs(numberofsteps); x++) // controls the number of steps
-      {
-        digitalWrite(stepPin1,HIGH);
-        delayMicroseconds(adjustedDelayTime); // controls the delay between steps
-        digitalWrite(stepPin1,LOW);
-        delayMicroseconds(adjustedDelayTime); // controls the delay between steps
-      }
-    }
-    else if ((gyroRateX < -10.0) && (((data.mapX >= -50) && (data.mapX <= 50)) && ((data.mapY >= -50) && (data.mapY <= 50)) && (data.megumin_button == HIGH))) //joystick in the middle and button pressed right with stabilization
-    {
-      servo1.write(90);
-      servo2.write(90);
-      Serial.print("relay off");
-      Serial.print("\n");
-      digitalWrite(dirPin0,LOW); //Rotate up
-      double adjustedDelayTime = delayTime * 0.8; // Reduce delay time by 20%
-      for(int x = 0; x < abs(numberofsteps); x++) // controls the number of steps
-      {
-        digitalWrite(stepPin0,HIGH);
-        delayMicroseconds(adjustedDelayTime); // controls the delay between steps
-        digitalWrite(stepPin0,LOW);
-        delayMicroseconds(adjustedDelayTime); // controls the delay between steps
-      }
-      digitalWrite(dirPin1,HIGH); //Rotate up
-      for(int x = 0; x < abs(numberofsteps); x++) // controls the number of steps
-      {
-        digitalWrite(stepPin1,HIGH);
-        delayMicroseconds(adjustedDelayTime); // controls the delay between steps
-        digitalWrite(stepPin1,LOW);
-        delayMicroseconds(adjustedDelayTime); // controls the delay between steps
-      }
-    }
-    else if (((data.mapX >= -50) && (data.mapX <= 50)) && ((data.mapY >= -50) && (data.mapY <= 50)) && (data.megumin_button == HIGH)) //joystick in the middle and button pressed
-  {
-    servo1.write(0);
-    servo2.write(180);
-    Serial.print("relay off");
-    Serial.print("\n");
-  }
-  else if (((data.mapX >= -50) && (data.mapX <= 50)) && ((data.mapY >= -50) && (data.mapY <= 50)) && (data.megumin_button == LOW)) //joystick in the middle and button not pressed
-  {
-    servo1.write(90);
-    servo2.write(90);
-    Serial.print("\n");
-  }
-  else if ((gyroRateX > 5.0) && (((data.mapX <= 512) && (data.mapX > 50)) && ((data.mapY >= -50) && (data.mapY <= 50)))) // Joystick right with stabilization
-  {
-    servo1.write(90);
-    servo2.write(90);
-    Serial.print("\n");
-    digitalWrite(dirPin2,HIGH);//Rotate right
-    for(int x = 0; x < 4; x++)
-    {
-      digitalWrite(stepPin2,HIGH);
-      delayMicroseconds(2000);
-      // Change delay for changing speed of motor
-      //500 = max fast
-      //2000 = max slow
-      digitalWrite(stepPin2,LOW);
-      delayMicroseconds(2000);
-    }
-    // Code to execute if a is positive
-    digitalWrite(dirPin0,HIGH); //Rotate down
-    double adjustedDelayTime = delayTime * 0.8; // Reduce delay time by 20%
-    for(int x = 0; x < abs(numberofsteps); x++) // controls the number of steps
-    {
-      digitalWrite(stepPin0,HIGH);
-      delayMicroseconds(adjustedDelayTime); // controls the delay between steps
-      digitalWrite(stepPin0,LOW);
-      delayMicroseconds(adjustedDelayTime); // controls the delay between steps
-    }
-    digitalWrite(dirPin1,LOW); //Rotate down
-    for(int x = 0; x < abs(numberofsteps); x++) // controls the number of steps
-    {
-      digitalWrite(stepPin1,HIGH);
-      delayMicroseconds(adjustedDelayTime); // controls the delay between steps
-      digitalWrite(stepPin1,LOW);
-      delayMicroseconds(adjustedDelayTime); // controls the delay between steps
-    }
-  }
-  else if ((gyroRateX < -10.0) && (((data.mapX <= 512) && (data.mapX > 50)) && ((data.mapY >= -50) && (data.mapY <= 50)))) // Joystick right right with stabilization
-  {
-    servo1.write(90);
-    servo2.write(90);
-    Serial.print("\n");
-    digitalWrite(dirPin2,HIGH);//Rotate right
-    for(int x = 0; x < 4; x++)
-    {
-      digitalWrite(stepPin2,HIGH);
-      delayMicroseconds(2000);
-      // Change delay for changing speed of motor
-      //500 = max fast
-      //2000 = max slow
-      digitalWrite(stepPin2,LOW);
-      delayMicroseconds(2000);
-    }
-    digitalWrite(dirPin0,LOW); //Rotate up
-    double adjustedDelayTime = delayTime * 0.8; // Reduce delay time by 20%
-    for(int x = 0; x < abs(numberofsteps); x++) // controls the number of steps
-    {
-      digitalWrite(stepPin0,HIGH);
-      delayMicroseconds(adjustedDelayTime); // controls the delay between steps
-      digitalWrite(stepPin0,LOW);
-      delayMicroseconds(adjustedDelayTime); // controls the delay between steps
-    }
-    digitalWrite(dirPin1,HIGH); //Rotate up
-    for(int x = 0; x < abs(numberofsteps); x++) // controls the number of steps
-    {
-      digitalWrite(stepPin1,HIGH);
-      delayMicroseconds(adjustedDelayTime); // controls the delay between steps
-      digitalWrite(stepPin1,LOW);
-      delayMicroseconds(adjustedDelayTime); // controls the delay between steps
-    }
-  }
-  else if ((gyroRateX > 5.0) && (((data.mapX >= -512) && (data.mapX < -50)) && ((data.mapY >= -50) && (data.mapY <= 50)))) // Joystick left right with stabilization
-  {
-    servo1.write(90);
-    servo2.write(90);
-    Serial.print("\n");
-    digitalWrite(dirPin2,LOW);//Rotate left
-    for(int x = 0; x < 4; x++)
-    {
-      digitalWrite(stepPin2,HIGH);
-      delayMicroseconds(2000);
-      // Change delay for changing speed of motor
-      //500 = max fast
-      //2000 = max slow
-      digitalWrite(stepPin2,LOW);
-      delayMicroseconds(2000);
-    }
-    // Code to execute if a is positive
-    digitalWrite(dirPin0,HIGH); //Rotate down
-    double adjustedDelayTime = delayTime * 0.8; // Reduce delay time by 20%
-    for(int x = 0; x < abs(numberofsteps); x++) // controls the number of steps
-    {
-      digitalWrite(stepPin0,HIGH);
-      delayMicroseconds(adjustedDelayTime); // controls the delay between steps
-      digitalWrite(stepPin0,LOW);
-      delayMicroseconds(adjustedDelayTime); // controls the delay between steps
-    }
-    digitalWrite(dirPin1,LOW); //Rotate down
-    for(int x = 0; x < abs(numberofsteps); x++) // controls the number of steps
-    {
-      digitalWrite(stepPin1,HIGH);
-      delayMicroseconds(adjustedDelayTime); // controls the delay between steps
-      digitalWrite(stepPin1,LOW);
-      delayMicroseconds(adjustedDelayTime); // controls the delay between steps
-    }
-  }
-  else if ((gyroRateX < -10.0) && (((data.mapX >= -512) && (data.mapX < -50)) && ((data.mapY >= -50) && (data.mapY <= 50)))) // Joystick left right with stabilization
-  {
-    servo1.write(90);
-    servo2.write(90);
-    Serial.print("\n");
-    digitalWrite(dirPin2,LOW);//Rotate left
-    for(int x = 0; x < 4; x++)
-    {
-      digitalWrite(stepPin2,HIGH);
-      delayMicroseconds(2000);
-      // Change delay for changing speed of motor
-      //500 = max fast
-      //2000 = max slow
-      digitalWrite(stepPin2,LOW);
-      delayMicroseconds(2000);
-    }
-    digitalWrite(dirPin0,LOW); //Rotate up
-    double adjustedDelayTime = delayTime * 0.8; // Reduce delay time by 20%
-    for(int x = 0; x < abs(numberofsteps); x++) // controls the number of steps
-    {
-      digitalWrite(stepPin0,HIGH);
-      delayMicroseconds(adjustedDelayTime); // controls the delay between steps
-      digitalWrite(stepPin0,LOW);
-      delayMicroseconds(adjustedDelayTime); // controls the delay between steps
-    }
-    digitalWrite(dirPin1,HIGH); //Rotate up
-    for(int x = 0; x < abs(numberofsteps); x++) // controls the number of steps
-    {
-      digitalWrite(stepPin1,HIGH);
-      delayMicroseconds(adjustedDelayTime); // controls the delay between steps
-      digitalWrite(stepPin1,LOW);
-      delayMicroseconds(adjustedDelayTime); // controls the delay between steps
-    }
-  }
-  else if (((data.mapX <= 512) && (data.mapX > 50)) && ((data.mapY >= -50) && (data.mapY <= 50))) // Joystick right
-  {
-    servo1.write(90);
-    servo2.write(90);
-    Serial.print("\n");
-    digitalWrite(dirPin2,HIGH);//Rotate right
-    for(int x = 0; x < 4; x++)
-    {
-      digitalWrite(stepPin2,HIGH);
-      delayMicroseconds(2000);
-      // Change delay for changing speed of motor
-      //500 = max fast
-      //2000 = max slow
-      digitalWrite(stepPin2,LOW);
-      delayMicroseconds(2000);
-    }
-  }
-  else if (((data.mapX >= -512) && (data.mapX < -50)) && ((data.mapY >= -50) && (data.mapY <= 50))) // Joystick left
-  {
-    servo1.write(90);
-    servo2.write(90);
-    Serial.print("\n");
-    digitalWrite(dirPin2,LOW);//Rotate left
-    for(int x = 0; x < 4; x++)
-    {
-      digitalWrite(stepPin2,HIGH);
-      delayMicroseconds(2000);
-      // Change delay for changing speed of motor
-      //500 = max fast
-      //2000 = max slow
-      digitalWrite(stepPin2,LOW);
-      delayMicroseconds(2000);
-    }
-  }
-  else if (((data.mapY <= 512) && (data.mapY > 50)) && ((data.mapX >= -50) && (data.mapX <= 50))) // Joystick down
-  {
-    servo1.write(90);
-    servo2.write(90);
-    Serial.print("\n");
-    digitalWrite(dirPin0,LOW);//Rotate up
-    for(int x = 0; x < 4; x++)
-    {
-      digitalWrite(stepPin0,HIGH);
-      delayMicroseconds(1000);
-      // Change delay for changing speed of motor
-      //500 = max fast
-      //2000 = max slow
-      digitalWrite(stepPin0,LOW);
-      delayMicroseconds(1000);
-    }
-    digitalWrite(dirPin1,HIGH);//Rotate up
-    for(int x = 0; x < 4; x++)
-    {
-      digitalWrite(stepPin1,HIGH);
-      delayMicroseconds(1000);
-      // Change delay for changing speed of motor
-      //500 = max fast
-      //2000 = max slow
-      digitalWrite(stepPin1,LOW);
-      delayMicroseconds(1000);
-    }
-  }
-  else if (((data.mapY >= -512) && (data.mapY < -50)) && ((data.mapX >= -50) && (data.mapX <= 50))) // Joystick up
-  {
-    servo1.write(90);
-    servo2.write(90);
-    Serial.print("\n");
-    digitalWrite(dirPin0,HIGH);//Rotate down
-    for(int x = 0; x < 4; x++)
-    {
-      digitalWrite(stepPin0,HIGH);
-      delayMicroseconds(1000);
-      // Change delay for changing speed of motor
-      //500 = max fast
-      //2000 = max slow
-      digitalWrite(stepPin0,LOW);
-      delayMicroseconds(1000);
-    }
-    digitalWrite(dirPin1,LOW);//Rotate down
-    for(int x = 0; x < 4; x++)
-    {
-      digitalWrite(stepPin1,HIGH);
-      delayMicroseconds(1000);
-      // Change delay for changing speed of motor
-      //500 = max fast
-      //2000 = max slow
-      digitalWrite(stepPin1,LOW);
-      delayMicroseconds(1000);
-    }
-  }
-  // Two axis movement at the same time
-  else if (((data.mapY <= 512) && (data.mapY > 50)) && ((data.mapX <= 512) && (data.mapX > 50))) // Joystick right down
-  {
-    servo1.write(90);
-    servo2.write(90);
-    Serial.print("\n");
-    digitalWrite(dirPin2,HIGH);//Rotate right
-    for(int x = 0; x < 4; x++)
-    {
-      digitalWrite(stepPin2,HIGH);
-      delayMicroseconds(2000);
-      // Change delay for changing speed of motor
-      //500 = max fast
-      //2000 = max slow
-      digitalWrite(stepPin2,LOW);
-      delayMicroseconds(2000);
-    }
-    digitalWrite(dirPin0,LOW);//Rotate up
-    for(int x = 0; x < 4; x++)
-    {
-      digitalWrite(stepPin0,HIGH);
-      delayMicroseconds(1000);
-      // Change delay for changing speed of motor
-      //500 = max fast
-      //2000 = max slow
-      digitalWrite(stepPin0,LOW);
-      delayMicroseconds(1000);
-    }
-    digitalWrite(dirPin1,HIGH);//Rotate up
-    for(int x = 0; x < 4; x++)
-    {
-      digitalWrite(stepPin1,HIGH);
-      delayMicroseconds(1000);
-      // Change delay for changing speed of motor
-      //500 = max fast
-      //2000 = max slow
-      digitalWrite(stepPin1,LOW);
-      delayMicroseconds(1000);
-    }
-  }
-  else if (((data.mapY <= 512) && (data.mapY > 50)) && ((data.mapX >= -512) && (data.mapX < -50))) // Joystick left down
-  {
-    servo1.write(90);
-    servo2.write(90);
-    Serial.print("\n");
-    digitalWrite(dirPin2,LOW);//Rotate left
-    for(int x = 0; x < 4; x++)
-    {
-      digitalWrite(stepPin2,HIGH);
-      delayMicroseconds(2000);
-      // Change delay for changing speed of motor
-      //500 = max fast
-      //2000 = max slow
-      digitalWrite(stepPin2,LOW);
-      delayMicroseconds(2000);
-    }
-    digitalWrite(dirPin0,LOW);//Rotate up
-    for(int x = 0; x < 4; x++)
-    {
-      digitalWrite(stepPin0,HIGH);
-      delayMicroseconds(1000);
-      // Change delay for changing speed of motor
-      //500 = max fast
-      //2000 = max slow
-      digitalWrite(stepPin0,LOW);
-      delayMicroseconds(1000);
-    }
-    digitalWrite(dirPin1,HIGH);//Rotate up
-    for(int x = 0; x < 4; x++)
-    {
-      digitalWrite(stepPin1,HIGH);
-      delayMicroseconds(1000);
-      // Change delay for changing speed of motor
-      //500 = max fast
-      //2000 = max slow
-      digitalWrite(stepPin1,LOW);
-      delayMicroseconds(1000);
-    }
-  }
-  else if (((data.mapY >= -512) && (data.mapY < -50)) && ((data.mapX <= 512) && (data.mapX > 50))) // Joystick right up
-  {
-    servo1.write(90);
-    servo2.write(90);
-    Serial.print("\n");
-    digitalWrite(dirPin2,HIGH);//Rotate right
-    for(int x = 0; x < 4; x++)
-    {
-      digitalWrite(stepPin2,HIGH);
-      delayMicroseconds(2000);
-      // Change delay for changing speed of motor
-      //500 = max fast
-      //2000 = max slow
-      digitalWrite(stepPin2,LOW);
-      delayMicroseconds(2000);
-    }
-    digitalWrite(dirPin0,HIGH);//Rotate down
-    for(int x = 0; x < 4; x++)
-    {
-      digitalWrite(stepPin0,HIGH);
-      delayMicroseconds(1000);
-      // Change delay for changing speed of motor
-      //500 = max fast
-      //2000 = max slow
-      digitalWrite(stepPin0,LOW);
-      delayMicroseconds(1000);
-    }
-    digitalWrite(dirPin1,LOW);//Rotate down
-    for(int x = 0; x < 4; x++)
-    {
-      digitalWrite(stepPin1,HIGH);
-      delayMicroseconds(1000);
-      // Change delay for changing speed of motor
-      //500 = max fast
-      //2000 = max slow
-      digitalWrite(stepPin1,LOW);
-      delayMicroseconds(1000);
-    }
-  }
-  else if (((data.mapY >= -512) && (data.mapY < -50)) && ((data.mapX >= -512) && (data.mapX < -50))) // Joystick left up
-  {
-    servo1.write(90);
-    servo2.write(90);
-    Serial.print("\n");
-    digitalWrite(dirPin2,LOW);//Rotate left
-    for(int x = 0; x < 4; x++)
-    {
-      digitalWrite(stepPin2,HIGH);
-      delayMicroseconds(2000);
-      // Change delay for changing speed of motor
-      //500 = max fast
-      //2000 = max slow
-      digitalWrite(stepPin2,LOW);
-      delayMicroseconds(2000);
-    }
-    digitalWrite(dirPin0,HIGH);//Rotate down
-    for(int x = 0; x < 4; x++)
-    {
-      digitalWrite(stepPin0,HIGH);
-      delayMicroseconds(1000);
-      // Change delay for changing speed of motor
-      //500 = max fast
-      //2000 = max slow
-      digitalWrite(stepPin0,LOW);
-      delayMicroseconds(1000);
-    }
-    digitalWrite(dirPin1,LOW);//Rotate down
-    for(int x = 0; x < 4; x++)
-    {
-      digitalWrite(stepPin1,HIGH);
-      delayMicroseconds(1000);
-      // Change delay for changing speed of motor
-      //500 = max fast
-      //2000 = max slow
-      digitalWrite(stepPin1,LOW);
-      delayMicroseconds(1000);
-    }
+  } else {
+    Serial.println("No radio data available");
   }
 }
+
+void stepMotor(int stepPin, int speed) {
+  digitalWrite(stepPin, HIGH);
+  delayMicroseconds(speed);
+  digitalWrite(stepPin, LOW);
+  delayMicroseconds(speed);
+}
+
+void setMicrostepping(int ms1, int ms2) {
+  digitalWrite(ms1Pin, ms1);
+  digitalWrite(ms2Pin, ms2);
 }
