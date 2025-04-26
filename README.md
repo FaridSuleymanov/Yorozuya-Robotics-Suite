@@ -1,4 +1,4 @@
-# Project Kagura, YATO-Umbrella System, and Project Megumin
+# Project Kagura, YATO-Umbrella System, and Project Okita
 
 This repository contains the source code and documentation for three experimental robotic systems: Project Kagura, YATO-Umbrella System, and Project Megumin, along with the Transmitter Controller used to operate them.
 These systems focus on mobile ground operations, multi-sensor remote surveillance, and vector-thrust controlled rocketry.
@@ -90,19 +90,16 @@ Fine microstepping for high fidelity movement
 
 Modular structure for upgrades and expansion
 
-### Project Megumin
+### Project Okita — Interceptor UAV System
+Overview Project Okita is a high-performance, modular interceptor UAV platform designed for the safe, non-lethal capture or disruption of hostile drones and unauthorized aerial systems. Engineered for resilience, speed, and tactical versatility, Project Okita operates using a hybrid propulsion model combining Electric Ducted Fan (EDF) propulsion for cruise and maneuverability with solid rocket boost capability for high-speed interception. Built exclusively from commercially available, civilian-grade components, the system is designed for civil defense, critical infrastructure protection, experimental research, and rapid deployment security missions.
 
-Project Megumin focuses on the vector thrust control (TVC) of a solid-fuel rocket engine using:
+Core Objectives Enable interception of hostile drones without reliance on kinetic destruction.
 
-Arduino Nano microcontroller
+Deliver high-speed pursuit capabilities through modular EDF and rocket integration.
 
-Dual-axis servo actuation
+Operate with safety, legal compliance, and modular scalability as core design principles.
 
-MPU6050 IMU for stabilization sensing
-
-Full stabilization relying only on thrust vectoring
-
-Source file: rocket_stabilization_test_code.ino
+Demonstrate practical, real-world deployability using accessible materials and construction methods.
 
 ### Transmitter Controller
 
