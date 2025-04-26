@@ -104,7 +104,7 @@ Full stabilization relying only on thrust vectoring
 
 Source file: rocket_stabilization_test_code.ino
 
-Transmitter Controller
+### Transmitter Controller
 
 The Transmitter Controller is a custom-built wireless controller that:
 
