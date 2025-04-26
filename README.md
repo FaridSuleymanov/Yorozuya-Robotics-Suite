@@ -4,19 +4,63 @@ This repository contains the source code for the Project Kagura, YATO-umbrella s
 
 ## Kagura System
 
-The Kagura system is a motorized device that uses an MPU6050 sensor for motion detection and control. It uses an RF24 radio module for wireless communication. The system also controls a set of lights and an alarm, both of which can be toggled on and off.
+The Kagura System is an advanced modular ground platform designed for mobile operations, telemetry acquisition, and remote control.
+It is currently structured for recreational robotics, disaster response research, and experimental mobile AI applications.
 
-The Kagura system is controlled by a joystick. The joystick's X and Y positions are mapped to the movement of the motors. The system also uses the MPU6050 sensor to adjust the speed of the motors based on the tilt angle of the device.
+The system features a robust combination of lightweight mechanical design, dynamic motion control, and real-time sensor data fusion.
 
-The code for the Kagura system is contained in the file `mobilized_platform_test_code.ino`.
+Core System Architecture:
 
-## YATO-umbrella System
+Component	Description
+Microcontroller	Arduino Mega 2560 (Primary Real-Time Controller)
+High-Level Controller	NVIDIA Jetson platform (Connected via Serial for advanced AI processing)
+Motors	Dual Cytron Motor Drivers with PWM and Direction Control (Skid-Steer Configuration)
+Sensors	
+MPU6050 (IMU for motion sensing and tilt compensation)
 
-The YATO-umbrella system is a device that uses stepper motors for movement. It also uses an RF24 radio module for wireless communication. The system controls a camera relay and a servo trigger.
+Dual Quadrature Encoders (for wheel position and speed tracking)
 
-The YATO-umbrella system is also controlled by a joystick. The joystick's X and Y positions are mapped to the movement of the stepper motors. The system also uses a button to control the servo trigger.
+GPS (TinyGPSPlus library for geolocation)
 
-The code for the YATO-umbrella system is contained in the file `receiver_test_code.ino`.
+Digital Compass (QMC5883L Magnetometer)
+| Communications |
+
+RF24 nRF24L01 Module (for long-range remote control via Joystick)
+
+Serial Link (Mega → Jetson for telemetry and AI coordination)
+| Peripheral Controls |
+
+Dual Relays (Control for alarm system and lighting systems)
+
+Dual Motor Power Relays (Enable/Disable Motors Safely)
+
+Features:
+Joystick-Based Manual Driving:
+Skid-steer movement via dual motor control, driven by real-time joystick mapping (nRF24L01 wireless).
+
+Motion Stabilization (Prototype Stage):
+MPU6050 gyroscope and accelerometer data low-pass filtered for improved stability and smoother motor control.
+
+Sensor Fusion for Navigation:
+GPS, Compass, and Encoders provide hybrid location, heading, and velocity data — serialized for Jetson-side processing.
+
+Emergency Safeguards:
+Integrated physical motor relays and safety switches ensure rapid manual deactivation.
+
+Real-Time Telemetry:
+Gyroscope readings, GPS location, compass heading, joystick commands, motor relay status, and encoder speeds are continuously reported via Serial output.
+
+Lighting and Alarm Control:
+Independent lighting system and alarm system toggled remotely via joystick buttons, managed through dual relays.
+
+Unique Capabilities:
+Full skid-steer control with encoder feedback for precise ground maneuvering.
+
+Real-time multi-sensor fusion pre-processed on Arduino Mega and offloaded to NVIDIA Jetson for future AI expansion.
+
+Modular structure allows for rapid hardware upgrades (e.g., future addition of LIDARs, expanded sensor payloads, autonomous navigation routines).
+
+Designed for field reliability using only open-source libraries and COTS (commercial off-the-shelf) components.
 
 ## Project Megumin
 
