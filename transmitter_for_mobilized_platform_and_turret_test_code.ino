@@ -9,9 +9,8 @@
 #define OLED_RESET 4
 Adafruit_SSD1306 display(128, 64, &Wire, OLED_RESET);
 
-//Paste your anime image bitmap here
-// 'anime-gintama-dog-sadaharu-gintama-wallpaper-preview', 128x64px
-const unsigned char myBitmap [] PROGMEM = {
+// Bitmap for OLED
+const unsigned char myBitmap[] PROGMEM = {
   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
@@ -78,27 +77,21 @@ const unsigned char myBitmap [] PROGMEM = {
   0x00, 0x00, 0x00, 0x00, 0x03, 0xff, 0xf8, 0x00, 0x00, 0x1f, 0xff, 0xc0, 0x00, 0x00, 0x00, 0x00
 };
 
-
 RF24 radio(7, 8); // CE, CSN
 
 const byte address[6] = "42424";
-// defines pins numbers for joystick
+
+// Joystick and button pins
 int VRx = A0;
 int VRy = A1;
 int SW = 2;
 int VRx2 = A2;
 int VRy2 = A3;
-int xPosition = 0;
-int yPosition = 0;
-int x2Position = 0;
-int y2Position = 0;
-int SW_state = 0;
-// defines pin number for buttons
 ezButton megumin_button(3);
 ezButton lights_button(4);
 ezButton alarm_button(6);
 
-// Max size of this struct is 32 bytes - NRF24L01 buffer limit
+// Data structure for RF24
 struct Data_Package {
   int mapX;
   int mapY;
@@ -108,70 +101,64 @@ struct Data_Package {
   boolean lights_buttonstater;
   boolean alarm_buttonstater;
 };
-// Create a variable with the above structure
 Data_Package data;
 
+// Smoothing variables
+int smoothedX = 0, smoothedY = 0, smoothedX2 = 0, smoothedY2 = 0;
+const float smoothingFactor = 0.9;
+
 void setup() {
-  //Set debounce time for filtering noises from buttons
+  // Initialize buttons with debounce
   megumin_button.setDebounceTime(50);
   lights_button.setDebounceTime(50);
   alarm_button.setDebounceTime(50);
-  //Set anime display
-  display.begin(SSD1306_SWITCHCAPVCC, 0x3C); //or 0x3C
-  display.clearDisplay(); //for Clearing the display
-  display.drawBitmap(0, 0, myBitmap, 128, 64, WHITE); // display.drawBitmap(x position, y position, bitmap data, bitmap width, bitmap height, color)
-  display.display();
-  
-  //Sets pins for joystick as input
-  Serial.begin(9600);
-  pinMode(VRx, INPUT);
-  pinMode(VRy, INPUT);
-  pinMode(VRx2, INPUT);
-  pinMode(VRy2, INPUT);
-  pinMode(SW, INPUT_PULLUP);
 
-  //Sets initial values
-  data.mapX = 0;
-  data.mapY = 0;
-  data.megumin_button = 0;
-  data.map2X = 0;
-  data.map2Y = 0;
-  data.lights_buttonstater = 0;
-  data.alarm_buttonstater = 0;
-  
+  // Initialize OLED display
+  display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
+  display.clearDisplay();
+  display.drawBitmap(0, 0, myBitmap, 128, 64, WHITE);
+  display.display();
+
+  // Initialize serial and RF24
+  Serial.begin(115200);
   radio.begin();
+  radio.setDataRate(RF24_1MBPS);
   radio.openWritingPipe(address);
   radio.setPALevel(RF24_PA_MIN);
   radio.stopListening();
+
+  Serial.println("Setup complete. Starting loop...");
+  Serial.println("Lights Button:  Alarm Button:  Joystick 1 X:  Joystick 1 Y:  Joystick 2 X:  Joystick 2 Y:");
 }
 
 void loop() {
   megumin_button.loop();
   lights_button.loop();
   alarm_button.loop();
-  int megumin_buttonstate = megumin_button.getState();
-  int lights_buttonstate = lights_button.getState();
-  int alarm_buttonstate = alarm_button.getState();
-//  if (megumin_buttonstate == HIGH){
-//    display.clearDisplay(); //for Clearing the display
-//    display.drawBitmap(0, 0, meguminBitmap, 128, 64, WHITE); // display.drawBitmap(x position, y position, bitmap data, bitmap width, bitmap height, color)
-//    display.display();
-//  }
-//  if (megumin_buttonstate == LOW) {
-//    display.clearDisplay(); //for Clearing the display
-//    display.drawBitmap(0, 0, myBitmap, 128, 64, WHITE); // display.drawBitmap(x position, y position, bitmap data, bitmap width, bitmap height, color)
-//    display.display();
-//  }
-  xPosition = analogRead(VRx);// Getting joystick position x
-  yPosition = analogRead(VRy);// Getting joystick position y
-  data.mapX = map(xPosition, 0, 1023, -512, 512);// Jostic position from 0 to 1023 for x
-  data.mapY = map(yPosition, 0, 1023, -512, 512);// Jostic position from 0 to 1023 for y
-  data.megumin_button = megumin_buttonstate;
-  x2Position = analogRead(VRx2);// Getting joystick second position x
-  y2Position = analogRead(VRy2);// Getting joystick second position y
-  data.map2X = map(x2Position, 0, 1023, -512, 512);// Second jostic position from 0 to 1023 for x
-  data.map2Y = map(y2Position, 0, 1023, -512, 512);// Second jostic position from 0 to 1023 for y
-  data.lights_buttonstater = lights_buttonstate;
-  data.alarm_buttonstater = alarm_buttonstate;
-  radio.write(&data, sizeof(Data_Package));
+
+  // Read button states
+  data.megumin_button = megumin_button.getState();
+  data.lights_buttonstater = lights_button.getState();
+  data.alarm_buttonstater = alarm_button.getState();
+
+  // Read joystick values
+  int xPosition = analogRead(VRx);
+  int yPosition = analogRead(VRy);
+  int x2Position = analogRead(VRx2);
+  int y2Position = analogRead(VRy2);
+
+  // Apply smoothing to joystick values
+  smoothedX += smoothingFactor * (xPosition - smoothedX);
+  smoothedY += smoothingFactor * (yPosition - smoothedY);
+  smoothedX2 += smoothingFactor * (x2Position - smoothedX2);
+  smoothedY2 += smoothingFactor * (y2Position - smoothedY2);
+
+  // Map smoothed joystick values
+  data.mapX = map(smoothedX, 0, 1023, -512, 512);
+  data.mapY = map(smoothedY, 0, 1023, -512, 512);
+  data.map2X = map(smoothedX2, 0, 1023, -512, 512);
+  data.map2Y = map(smoothedY2, 0, 1023, -512, 512);
+
+  // Transmit data
+  bool success = radio.write(&data, sizeof(Data_Package));
 }
