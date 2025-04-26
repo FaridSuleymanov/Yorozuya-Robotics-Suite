@@ -77,29 +77,40 @@ Acknowledgment of Civilian Use Compliance and Risk Mitigation for Robotic System
 I, Farid Suleymanov, hereby declare the following:
 1. Civilian Purpose Declaration
 I acknowledge that the Robotic Systems under development are intended solely for civilian, non-lethal, and non-military applications, including but not limited to:
+
 Recreational robotics activities
+
 Disaster response research and development
+
 Civil defense resilience initiatives
+
 Drone countermeasure testing (non-lethal)
+
 At no time has the system been configured, tested, or marketed for lethal, military, or classified use.
 
-2. Materials and Components Sourcing
+3. Materials and Components Sourcing
 All components, materials, and subsystems used in this project are sourced from commercially available, unrestricted suppliers accessible to the general public.
 No restricted, ITAR-controlled, EAR-controlled, classified, or proprietary military components have been incorporated.
 
-3. Misuse Prevention Engineering
+4. Misuse Prevention Engineering
 The platform incorporates intentional engineering safeguards to discourage and physically inhibit misuse, including:
+
 Structural failure modes triggered by forces exceeding recreational equipment limits.
+
 Sensor-driven shutdown protocols to detect unauthorized weaponization attempts.
+
 Economic barriers against illegal modification by requiring impractically expensive machining for structural reinforcement.
 
-4. Ethical and Legal Compliance
+6. Ethical and Legal Compliance
 I have made every reasonable effort to ensure the platform:
+
 Complies with applicable local, national, and international laws governing non-lethal civilian technology
+
 Operates transparently and responsibly under civilian ethical standards
+
 Minimizes dual-use risk through material, design, and procedural controls
 
-5. Responsibility Acknowledgment
+8. Responsibility Acknowledgment
 I fully accept and acknowledge that while every precaution has been taken,
 any third-party unauthorized modification, misuse, or illegal adaptation of the system
 is beyond my control, responsibility, and original intent.
