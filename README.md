@@ -1,162 +1,178 @@
-# Project Kagura, YATO-umbrella system and Project Megumin
+🚀 Project Kagura, YATO-Umbrella System, and Project Megumin
+This repository contains the source code and documentation for three experimental robotic systems:
+Project Kagura, YATO-Umbrella System, and Project Megumin — alongside the Transmitter Controller used to operate them.
 
-This repository contains the source code for the Project Kagura, YATO-umbrella system, and Project Megumin. The system is composed of three main components: the Kagura system, the YATO-umbrella system, a transmitter controller that communicates with both systems, and the Project Megumin which is focused on controlling the vector thrust of a solid fuel rocket engine.
+These systems focus on mobile ground operations, multi-sensor remote surveillance, and vector-thrust controlled rocketry.
 
-## Kagura System
+📦 Systems Overview
+⚙️ Kagura System
+The Kagura System is a modular ground robotics platform for recreational robotics, disaster response, and experimental AI applications.
+It integrates real-time motion control, telemetry acquisition, and sensor fusion capabilities.
 
-The Kagura System is an advanced modular ground platform designed for mobile operations, telemetry acquisition, and remote control.
-It is currently structured for recreational robotics, disaster response research, and experimental mobile AI applications.
+Core Architecture:
 
-The system features a robust combination of lightweight mechanical design, dynamic motion control, and real-time sensor data fusion.
-
-Core System Architecture:
 
 Component	Description
-Microcontroller	Arduino Mega 2560 (Primary Real-Time Controller)
-High-Level Controller	NVIDIA Jetson platform (Connected via Serial for advanced AI processing)
-Motors	Dual Cytron Motor Drivers with PWM and Direction Control (Skid-Steer Configuration)
-Sensors	
-MPU6050 (IMU for motion sensing and tilt compensation)
+Microcontroller	Arduino Mega 2560
+High-Level Controller	NVIDIA Jetson Platform (Serial-linked)
+Motors	Dual Cytron Motor Drivers (PWM & Direction Control)
+Sensors	MPU6050 (IMU), Dual Quadrature Encoders, GPS, Digital Compass
+Communications	nRF24L01 RF Module (Wireless Joystick) + Serial Link
+Peripheral Controls	Dual Relays (Lights/Alarm), Motor Power Relays
+Key Features:
 
-Dual Quadrature Encoders (for wheel position and speed tracking)
+Joystick-based skid-steer driving
 
-GPS (TinyGPSPlus library for geolocation)
+Motion stabilization (MPU6050 filtered)
 
-Digital Compass (QMC5883L Magnetometer)
-| Communications |
+Sensor fusion (GPS, Compass, Encoders)
 
-RF24 nRF24L01 Module (for long-range remote control via Joystick)
+Emergency motor kill switch
 
-Serial Link (Mega → Jetson for telemetry and AI coordination)
-| Peripheral Controls |
+Real-time telemetry output
 
-Dual Relays (Control for alarm system and lighting systems)
+Modular, COTS components only
 
-Dual Motor Power Relays (Enable/Disable Motors Safely)
+🛡️ YATO-Umbrella System
+The YATO-Umbrella System is a high-precision multi-sensor turret platform designed for situational awareness, tracking, and experimental reconnaissance.
 
-Features:
-Joystick-Based Manual Driving:
-Skid-steer movement via dual motor control, driven by real-time joystick mapping (nRF24L01 wireless).
+Core Architecture:
 
-Motion Stabilization (Prototype Stage):
-MPU6050 gyroscope and accelerometer data low-pass filtered for improved stability and smoother motor control.
 
-Sensor Fusion for Navigation:
-GPS, Compass, and Encoders provide hybrid location, heading, and velocity data — serialized for Jetson-side processing.
+Component	Description
+Primary Controller	Arduino Mega 2560
+High-Level Controller	NVIDIA Jetson Orin Nano
+Sensors	FLIR Lepton Thermal Camera, Pi Camera (100x Optical Zoom), Laser Rangefinder (200m), Dual MPU6050s
+Motors and Actuation	DM542 and DM860H Stepper Drivers, TMC2208, Dual Servo System
+Communications	nRF24L01 RF Module + Serial Link
+Key Features:
 
-Emergency Safeguards:
-Integrated physical motor relays and safety switches ensure rapid manual deactivation.
+Precision multi-axis stabilization
 
-Real-Time Telemetry:
-Gyroscope readings, GPS location, compass heading, joystick commands, motor relay status, and encoder speeds are continuously reported via Serial output.
+Thermal + optical image fusion
 
-Lighting and Alarm Control:
-Independent lighting system and alarm system toggled remotely via joystick buttons, managed through dual relays.
+Real-time ranging up to 200 meters
 
-Unique Capabilities:
-Full skid-steer control with encoder feedback for precise ground maneuvering.
+Emergency motor shutdown switch
 
-Real-time multi-sensor fusion pre-processed on Arduino Mega and offloaded to NVIDIA Jetson for future AI expansion.
+High-fidelity microstepping for smooth tracking
 
-Modular structure allows for rapid hardware upgrades (e.g., future addition of LIDARs, expanded sensor payloads, autonomous navigation routines).
+Fully modular and field-upgradable
 
-Designed for field reliability using only open-source libraries and COTS (commercial off-the-shelf) components.
+🔥 Project Megumin
+Project Megumin focuses on the vector thrust control (TVC) of a solid-fuel rocket engine using:
 
-## Project Megumin
+Arduino Nano microcontroller
 
-Project Megumin is focused on controlling the vector thrust of a solid fuel rocket engine. The system uses two servos to control the two axes of the vector thrust control. An MPU6050 sensor is used to measure the forces acting on the rocket, and an Arduino Nano is used to calculate how far to move the servo in order for the rocket to move upwards in a stabilized manner, controlled only by the thrust vector control (TVC).
+Dual-axis servo system
 
-The code for the Project Megumin is contained in the file `rocket_stabilization_test_code.ino`.
+MPU6050 IMU for stabilization feedback
 
-## Transmitter Controller
+Full stabilization solely by TVC with no aerodynamic surfaces
 
-The transmitter controller is a device that sends control signals to both the Kagura and YATO-umbrella systems. It uses an RF24 radio module for wireless communication. The controller has a joystick and a button for user input. The joystick's X and Y positions and the button state are sent to the Kagura and YATO-umbrella systems.
+Source file:
+rocket_stabilization_test_code.ino
 
-The transmitter controller also has an OLED display that shows a bitmap image.
+🎮 Transmitter Controller
+The Transmitter Controller is a custom-built wireless controller:
 
-The code for the transmitter controller is contained in the file `transmitter_for_mobilized_platform_and_turret_test_code.ino`.
+RF24 radio communication to Kagura and YATO-Umbrella
 
-## Installation
+Joystick and button interface
 
-1. Clone the repository to your local machine.
-2. Open the `.ino` files in the Arduino IDE.
-3. Connect your Arduino board to your computer.
-4. Select the correct board and port in the Arduino IDE.
-5. Upload the code to your Arduino board.
+Integrated OLED display for status visuals
 
-## Usage
+Source file:
+transmitter_for_mobilized_platform_and_turret_test_code.ino
 
-Use the joystick and button on the transmitter controller to control the Kagura and YATO-umbrella systems. The joystick controls the movement of the motors, and the button toggles the lights and alarm on the Kagura system and the servo trigger on the YATO-umbrella system.
+🛠️ Installation
+Clone the repository.
 
-## Dependencies
+Open the .ino files in Arduino IDE.
 
-This project uses the following libraries:
+Connect your Arduino board.
 
-- `Wire.h`
-- `SPI.h`
-- `nRF24L01.h`
-- `RF24.h`
-- `MPU6050_tockn.h`
-- `CytronMotorDriver.h`
-- `Adafruit_GFX.h`
-- `Adafruit_SSD1306.h`
-- `ezButton.h`
-- `I2Cdev.h`
-- `MPU6050_6Axis_MotionApps20.h`
-- `Servo.h`
+Select the correct board and port in Arduino IDE.
 
-Make sure to install these libraries in the Arduino IDE before running the code.
+Upload the code to your board.
 
-## Contributing
+🚀 Usage
+Use the joystick and button on the transmitter controller to remotely operate Kagura and YATO-Umbrella systems.
 
-Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
+Joystick controls motor movement; button toggles lights, alarms, or triggers payload actions.
 
-## License
+📚 Dependencies
+Ensure the following libraries are installed in Arduino IDE:
 
-This project is licensed under the GNU General Public License v3.0 - see the `LICENSE` file for details.
+Wire.h
 
-##  Compliance and Risk Acknowledgment Statement
-Acknowledgment of Civilian Use Compliance and Risk Mitigation for Robotic Systems
+SPI.h
 
+nRF24L01.h
+
+RF24.h
+
+MPU6050_tockn.h
+
+CytronMotorDriver.h
+
+Adafruit_GFX.h
+
+Adafruit_SSD1306.h
+
+ezButton.h
+
+I2Cdev.h
+
+MPU6050_6Axis_MotionApps20.h
+
+Servo.h
+
+🤝 Contributing
+Pull requests are welcome.
+Please open an issue first to discuss any major changes.
+
+📜 License
+This project is licensed under the GNU General Public License v3.0.
+See the LICENSE file for details.
+
+⚖️ Compliance and Risk Acknowledgment Statement
+Civilian Purpose Declaration
 I, Farid Suleymanov, hereby declare the following:
-## 1. Civilian Purpose Declaration
-I acknowledge that the Robotic Systems under development are intended solely for civilian, non-lethal, and non-military applications, including but not limited to:
+All systems under development are intended exclusively for civilian, non-lethal, and non-military applications, including:
 
 Recreational robotics activities
 
-Disaster response research and development
+Disaster response research
 
 Civil defense resilience initiatives
 
-Drone countermeasure testing (non-lethal)
+Non-lethal drone countermeasure testing
 
-At no time has the system been configured, tested, or marketed for lethal, military, or classified use.
+At no point have these systems been configured, tested, or marketed for lethal, military, or classified use.
 
-## 3. Materials and Components Sourcing
-All components, materials, and subsystems used in this project are sourced from commercially available, unrestricted suppliers accessible to the general public.
-No restricted, ITAR-controlled, EAR-controlled, classified, or proprietary military components have been incorporated.
+Materials and Components Sourcing
+All components, materials, and subsystems are sourced from commercially available, unrestricted suppliers.
+No ITAR-controlled, EAR-controlled, classified, or military-specific components are used.
 
-## 4. Misuse Prevention Engineering
-The platform incorporates intentional engineering safeguards to discourage and physically inhibit misuse, including:
+Misuse Prevention Engineering
+The platforms incorporate safeguards including:
 
-Structural failure modes triggered by forces exceeding recreational equipment limits.
+Structural failure modes under excessive forces
 
-Sensor-driven shutdown protocols to detect unauthorized weaponization attempts.
+Sensor-driven shutdown protocols for unauthorized weaponization attempts
 
-Economic barriers against illegal modification by requiring impractically expensive machining for structural reinforcement.
+Economic barriers to illegal modification
 
-## 6. Ethical and Legal Compliance
-I have made every reasonable effort to ensure the platform:
+Ethical and Legal Compliance
+Operates under local, national, and international laws
 
-Complies with applicable local, national, and international laws governing non-lethal civilian technology
+Designed to uphold civilian ethical standards
 
-Operates transparently and responsibly under civilian ethical standards
+Implements risk minimization through design and procedures
 
-Minimizes dual-use risk through material, design, and procedural controls
+Responsibility Acknowledgment
+While all reasonable precautions have been taken, any unauthorized misuse, modification, or illegal adaptation is beyond the original intent and control.
+Such misuse is the sole responsibility of the offending party.
 
-## 8. Responsibility Acknowledgment
-I fully accept and acknowledge that while every precaution has been taken,
-any third-party unauthorized modification, misuse, or illegal adaptation of the system
-is beyond my control, responsibility, and original intent.
-Any such misuse shall be considered a violation of this declared design philosophy
-and subject to applicable legal consequences for the offending party.
+🧠 End of README
