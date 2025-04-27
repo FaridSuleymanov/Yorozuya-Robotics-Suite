@@ -32,10 +32,10 @@ All hardware is built entirely from commercially available, unrestricted parts a
 ## 3  Repository Layout
 ```
 ├── firmware/               # Arduino / PlatformIO projects
-│   ├── kagura
-│   ├── yato_umbrella
-│   ├── okita_uav
-│   └── transmitter
+│   ├── kagura_arduino
+│   ├── yato_umbrella_arduino
+│   ├── okita_arduino
+│   └── Ed_remote_arduino
 ├── hardware/               # KiCad schematics, PCB, 3D models
 ├── docs/                   # Build guides, block diagrams, compliance
 └── tools/                  # Utility scripts, calibration, log parsers
@@ -57,7 +57,7 @@ pio run -t upload
 
 ---
 
-## 5  Transmitter Controller
+## 5  Ed_remote
 - **MCU:** Arduino Pro Micro 5 V
 - **UI:** 2‑axis joystick + 4 tactile buttons
 - **Display:** 128×64 OLED (SSD1306)
