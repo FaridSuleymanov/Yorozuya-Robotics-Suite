@@ -42,56 +42,17 @@ All hardware is built entirely from commercially available, unrestricted parts a
 
 ---
 
-## 4  Quick Start
-```bash
-# 1  Clone
-git clone https://github.com/FaridSuleymanov/Project_Kagura_YATO_umbrella_Universal_remote_Okita_sytem.git
-
----
-
-## 5  Ed_remote
-- **MCU:** Arduino Pro Micro 5 V
-- **UI:** 2‑axis joystick + 4 tactile buttons
-- **Display:** 128×64 OLED (SSD1306)
-- **Radio:** nRF24L01+ (2.4 GHz)
-
-### Firmware flash
-1. Connect board via USB.
-2. Open `firmware/transmitter/transmitter.ino` in Arduino IDE.
-3. Select *Arduino Leonardo* board profile.
-4. Upload.
-
----
-
-## 6  Common Features
-- **Sensor fusion** – Complementary filter @ 100 Hz (IMU + GPS + encoders).
-- **Failsafe** – Hardware kill‑switch & software watchdog on dedicated line.
-- **Telemetry** – 10 Hz serial stream to Jetson or ground‑control.
-- **Modularity** – COTS components, parametric CAD, plug‑and‑play firmware.
-
----
-
-## 7  Dependencies
-Arduino sketches depend on the libraries below (install via Arduino IDE Library Manager or `platformio.ini`).
-```
-Wire       SPI         Servo       ezButton
-RF24       MPU6050_tockn           CytronMotorDriver
-Adafruit_GFX   Adafruit_SSD1306   MPU6050_DMP    I2Cdev
-```
-
----
-
-## 8  Contributing
+## 4  Contributing
 Pull requests are welcome! Please open an issue to discuss major changes first. Run `clang-format` and `markdownlint` before submitting.
 
 ---
 
-## 9  License
+## 5  License
 This project is distributed under the **GNU General Public License v3.0**. See Doc -> License for the full text.
 
 ---
 
-## 10  Compliance & Risk Statement (summary)
+## 6  Compliance & Risk Statement (summary)
 All systems are intended **solely for civilian, non‑lethal purposes** such as recreational robotics, disaster‑response R&D and drone counter‑measure research. Components are sourced from unrestricted commercial suppliers; no ITAR/EAR‑controlled hardware or software is used. Engineering safeguards include structural failure modes under excessive stress and firmware watchdog shutdowns on unauthorized modification.
 
 > **Responsibility notice:** Any illegal adaptation or misuse is beyond the author’s control and subject to applicable laws. See `docs/COMPLIANCE.md` for the full declaration.
