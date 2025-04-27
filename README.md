@@ -1,4 +1,4 @@
-# YATO Robotics Suite
+# Yorozuya-Robotics-Suite
 *A family of civilian, open‑source robotic platforms for ground, turret and aerial operations*
 
 **License:** GPL‑3.0   •   **Maintainer:** Farid Suleymanov   •   **Development status:** Alpha   •   **Last update:** 2025‑04‑27
