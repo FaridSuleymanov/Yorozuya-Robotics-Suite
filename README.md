@@ -1,7 +1,7 @@
 # YATO Robotics Suite
 *A family of civilian, open‑source robotic platforms for ground, turret and aerial operations*
 
-[![License: GPL‑3.0](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE) 
+[License: GPL‑3.0]
 **Maintainer:** Farid Suleymanov   •   **Development status:** Alpha   •   **Last update:** 2025‑04‑27
 
 ---
