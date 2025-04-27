@@ -46,14 +46,7 @@ All hardware is built entirely from commercially available, unrestricted parts a
 ## 4  Quick Start
 ```bash
 # 1  Clone
-git clone https://github.com/<your‑org>/yato‑robotics.git
-cd yato‑robotics
-
-# 2  Build / flash an example (PlatformIO shown)
-cd firmware/kagura
-pio run -t upload
-```
-*Detailed instructions for each system are in* `docs/<system>/build.md`.
+git clone https://github.com/FaridSuleymanov/Project_Kagura_YATO_umbrella_Universal_remote_Okita_sytem.git
 
 ---
 
@@ -95,7 +88,7 @@ Pull requests are welcome! Please open an issue to discuss major changes first.
 ---
 
 ## 9  License
-This project is distributed under the **GNU General Public License v3.0**. See [`LICENSE`](LICENSE) for the full text.
+This project is distributed under the **GNU General Public License v3.0**. See Doc -> License for the full text.
 
 ---
 
