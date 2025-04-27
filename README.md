@@ -1,210 +1,106 @@
-# Project Kagura, YATO-Umbrella System, and Project Okita
+# YATO Robotics Suite
+*A family of civilian, open‑source robotic platforms for ground, turret and aerial operations*
+
+[![License: GPL‑3.0](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE) 
+**Maintainer:** Farid Suleymanov   •   **Development status:** Alpha   •   **Last update:** 2025‑04‑27
+
+---
 
-This repository contains the source code and documentation for three experimental robotic systems: Project Kagura, YATO-Umbrella System, and Project Megumin, along with the Transmitter Controller used to operate them.
-These systems focus on mobile ground operations, multi-sensor remote surveillance, and vector-thrust controlled rocketry.
+## 1  Overview
+This repository aggregates firmware, electronics documents and build guides for three experimental robots plus their shared transmitter:
 
-## Systems Overview
+| System | Role | Highlights |
+|--------|------|-----------|
+| **Kagura UGV** | Modular tracked ground rover | Joystick‑driven skid‑steer, real‑time sensor fusion, Jetson AI coprocessor |
+| **YATO‑Umbrella Turret** | Multi‑sensor pan‑tilt head | Thermal + optical imaging, laser range‑finding, micro‑stepped precision drive |
+| **Okita Interceptor UAV** | EDF + rocket hybrid drone interceptor | EDF cruise, solid‑rocket sprint, non‑kinetic capture payloads |
+| **Handheld TX** | Common transmitter | nRF24L01+ link, OLED status, joystick + buttons |
 
-### Kagura System
+All hardware is built entirely from commercially available, unrestricted parts and is intended **exclusively for civilian, non‑lethal research**.
 
-The Kagura System is a modular ground robotics platform designed for recreational robotics, disaster response research, and experimental AI applications. It integrates real-time motion control, telemetry acquisition, and sensor fusion capabilities.
-Core Architecture
+---
 
-Microcontroller Arduino Mega 2560
+## 2  Hardware Matrix
+| System | MCU / FC | Companion SBC | Propulsion / Actuation | Core Sensors | Primary Radio |
+|--------|----------|---------------|------------------------|--------------|---------------|
+| Kagura | Arduino Mega 2560 | NVIDIA Jetson Xavier NX | Dual DC motors via Cytron MD30C | MPU‑6050, GPS, dual encoders, HMC5883L | nRF24L01+ |
+| YATO‑Umbrella | Arduino Mega 2560 | Jetson Orin Nano | 2‑axis steppers (DM542, DM860H) + dual servos | FLIR Lepton, RPi HQ‑Cam, laser rangefinder, dual MPU‑6050 | nRF24L01+ |
+| Okita | Pixhawk‑compatible FC | (Opt.) Jetson Orin Nano | Twin 90 mm EDF + solid rocket booster | Dual IMU, ADS‑B receiver | 900 MHz SiK |
 
-High-Level Controller NVIDIA Jetson Platform (Serial-linked)
+---
 
-Motors
+## 3  Repository Layout
+```
+├── firmware/               # Arduino / PlatformIO projects
+│   ├── kagura
+│   ├── yato_umbrella
+│   ├── okita_uav
+│   └── transmitter
+├── hardware/               # KiCad schematics, PCB, 3D models
+├── docs/                   # Build guides, block diagrams, compliance
+└── tools/                  # Utility scripts, calibration, log parsers
+```
 
-Dual Cytron Motor Drivers (PWM & Direction Control)
+---
 
-Sensors
+## 4  Quick Start
+```bash
+# 1  Clone
+git clone https://github.com/<your‑org>/yato‑robotics.git
+cd yato‑robotics
 
-MPU6050 (IMU), Dual Quadrature Encoders, GPS, Digital Compass
+# 2  Build / flash an example (PlatformIO shown)
+cd firmware/kagura
+pio run -t upload
+```
+*Detailed instructions for each system are in* `docs/<system>/build.md`.
 
-Communications
+---
 
-nRF24L01 RF Module (Wireless Joystick) + Serial Link
+## 5  Transmitter Controller
+- **MCU:** Arduino Pro Micro 5 V
+- **UI:** 2‑axis joystick + 4 tactile buttons
+- **Display:** 128×64 OLED (SSD1306)
+- **Radio:** nRF24L01+ (2.4 GHz)
 
-Peripheral Controls
+### Firmware flash
+1. Connect board via USB.
+2. Open `firmware/transmitter/transmitter.ino` in Arduino IDE.
+3. Select *Arduino Leonardo* board profile.
+4. Upload.
 
-Dual Relays (Lights/Alarm), Motor Power Relays
+---
 
-Key Features
+## 6  Common Features
+- **Sensor fusion** – Complementary filter @ 100 Hz (IMU + GPS + encoders).
+- **Failsafe** – Hardware kill‑switch & software watchdog on dedicated line.
+- **Telemetry** – 10 Hz serial stream to Jetson or ground‑control.
+- **Modularity** – COTS components, parametric CAD, plug‑and‑play firmware.
 
-Joystick-based skid-steer driving
+---
 
-Motion stabilization with MPU6050 (low-pass filtered)
+## 7  Dependencies
+Arduino sketches depend on the libraries below (install via Arduino IDE Library Manager or `platformio.ini`).
+```
+Wire       SPI         Servo       ezButton
+RF24       MPU6050_tockn           CytronMotorDriver
+Adafruit_GFX   Adafruit_SSD1306   MPU6050_DMP    I2Cdev
+```
 
-Sensor fusion combining GPS, Compass, and Encoders
+---
 
-Emergency motor shutdown capability
+## 8  Contributing
+Pull requests are welcome! Please open an issue to discuss major changes first. Run `clang-format` and `markdownlint` before submitting.
 
-Real-time telemetry output to Jetson
+---
 
-Modular design using COTS (commercial off-the-shelf) components
+## 9  License
+This project is distributed under the **GNU General Public License v3.0**. See [`LICENSE`](LICENSE) for the full text.
 
-### YATO-Umbrella System
+---
 
-The YATO-Umbrella System is a high-precision multi-sensor turret platform designed for situational awareness, tracking, and non-lethal remote reconnaissance.
+## 10  Compliance & Risk Statement (summary)
+All systems are intended **solely for civilian, non‑lethal purposes** such as recreational robotics, disaster‑response R&D and drone counter‑measure research. Components are sourced from unrestricted commercial suppliers; no ITAR/EAR‑controlled hardware or software is used. Engineering safeguards include structural failure modes under excessive stress and firmware watchdog shutdowns on unauthorized modification.
 
-Core Architecture
+> **Responsibility notice:** Any illegal adaptation or misuse is beyond the author’s control and subject to applicable laws. See `docs/COMPLIANCE.md` for the full declaration.
 
-Component
-
-Description
-
-Primary Controller
-
-Arduino Mega 2560
-
-High-Level Controller
-
-NVIDIA Jetson Orin Nano
-
-Sensors
-
-FLIR Lepton Thermal Camera, Raspberry Pi Camera (Optical Zoom), Laser Rangefinder (200m), Dual MPU6050 IMUs
-
-Motors and Actuation
-
-DM542 and DM860H Stepper Drivers, TMC2208 Driver, Dual Servo System
-
-Communications
-
-nRF24L01 RF Module + Serial Link
-
-Key Features
-
-Precision multi-axis targeting with stabilization
-
-Hybrid thermal and visual imaging
-
-Real-time laser distance measurement up to 200 meters
-
-Remote joystick control with intuitive mapping
-
-Emergency shutdown functionality for motors
-
-Fine microstepping for high fidelity movement
-
-Modular structure for upgrades and expansion
-
-### Project Okita — Interceptor UAV System
-Overview Project Okita is a high-performance, modular interceptor UAV platform designed for the safe, non-lethal capture or disruption of hostile drones and unauthorized aerial systems. Engineered for resilience, speed, and tactical versatility, Project Okita operates using a hybrid propulsion model combining Electric Ducted Fan (EDF) propulsion for cruise and maneuverability with solid rocket boost capability for high-speed interception. Built exclusively from commercially available, civilian-grade components, the system is designed for civil defense, critical infrastructure protection, experimental research, and rapid deployment security missions.
-
-Core Objectives Enable interception of hostile drones without reliance on kinetic destruction.
-
-Deliver high-speed pursuit capabilities through modular EDF and rocket integration.
-
-Operate with safety, legal compliance, and modular scalability as core design principles.
-
-Demonstrate practical, real-world deployability using accessible materials and construction methods.
-
-### Transmitter Controller
-
-The Transmitter Controller is a custom-built wireless controller that:
-
-Communicates with Kagura and YATO-Umbrella via nRF24L01
-
-Features a joystick and button interface
-
-Displays a status bitmap on an OLED display
-
-Source file: transmitter_for_mobilized_platform_and_turret_test_code.ino
-
-# Installation
-
-Clone the repository.
-1)Open the .ino files in the Arduino IDE.
-2)Connect your Arduino board via USB.
-3)Select the correct board and port in the Arduino IDE.
-4)Upload the code to your board.
-
-# Usage
-
-Use the joystick and button on the transmitter controller to remotely operate Kagura and YATO-Umbrella systems.
-
-The joystick controls motor movement.
-
-The button toggles lights, alarms, or payload actions depending on the system.
-
-# Dependencies
-
-Ensure the following libraries are installed in the Arduino IDE:
-
-Wire.h
-
-SPI.h
-
-nRF24L01.h
-
-RF24.h
-
-MPU6050_tockn.h
-
-CytronMotorDriver.h
-
-Adafruit_GFX.h
-
-Adafruit_SSD1306.h
-
-ezButton.h
-
-I2Cdev.h
-
-MPU6050_6Axis_MotionApps20.h
-
-Servo.h
-
-# Contributing
-
-Pull requests are welcome. For major changes, please open an issue first to discuss proposed improvements.
-
-# License
-
-This project is licensed under the GNU General Public License v3.0. See the LICENSE file for details.
-
-# Compliance and Risk Acknowledgment Statement
-
-## Civilian Purpose Declaration
-
-I, Farid Suleymanov, hereby declare the following: All systems developed under this project are intended exclusively for civilian, non-lethal, and non-military purposes, including:
-
-Recreational robotics activities
-
-Disaster response research and development
-
-Civil defense resilience initiatives
-
-Non-lethal drone countermeasure testing
-
-At no point have the systems been configured, tested, or marketed for military, lethal, or classified purposes.
-
-### Materials and Components Sourcing
-
-All components and subsystems are sourced from commercially available, unrestricted suppliers accessible to the public. No ITAR-controlled, EAR-controlled, classified, or military-restricted components are utilized.
-
-### Misuse Prevention Engineering
-
-The systems incorporate engineering safeguards, including:
-
-Structural failure modes under excessive stress
-
-Sensor-triggered shutdown protocols in the event of unauthorized modifications
-
-Economic barriers to illegal weaponization via expensive material requirements
-
-### Ethical and Legal Compliance
-
-The systems are designed to:
-
-Comply with applicable local, national, and international civilian technology laws
-
-Uphold ethical standards of civilian research and development
-
-Minimize dual-use risks through careful engineering and operational procedures
-
-# Responsibility Acknowledgment
-
-### While every reasonable precaution has been taken during the design and development of these systems, any unauthorized misuse, illegal adaptation, or modification is beyond the control and responsibility of the original developer. Such misuse shall be subject to applicable laws and legal consequences for the responsible party.
