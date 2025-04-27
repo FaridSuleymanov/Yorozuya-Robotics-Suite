@@ -80,11 +80,3 @@ Users assume full responsibility for integrating, operating or altering the syst
 
 ---
 
-## 8  Contact for Compliance Queries
-
-**Farid Suleymanov**\
-[your.email@example.com](mailto\:your.email@example.com)\
-GPG fingerprint: `3A6E D2F7 B8C4 9F57 ABCD  1234 5678 90AB CDEF 0123`
-
-If you identify a compliance issue or potential violation, please open a confidential issue or contact me directly.
-
