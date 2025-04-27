@@ -55,5 +55,5 @@ This project is distributed under the **GNU General Public License v3.0**. S
 ## 6  Compliance & Risk Statement (summary)
 All systems are intended **solely for civilian, non‑lethal purposes** such as recreational robotics, disaster‑response R&D and drone counter‑measure research. Components are sourced from unrestricted commercial suppliers; no ITAR/EAR‑controlled hardware or software is used. Engineering safeguards include structural failure modes under excessive stress and firmware watchdog shutdowns on unauthorized modification.
 
-> **Responsibility notice:** Any illegal adaptation or misuse is beyond the author’s control and subject to applicable laws. See `docs/COMPLIANCE.md` for the full declaration.
+> **Responsibility notice:** Any illegal adaptation or misuse is beyond the author’s control and subject to applicable laws. See `Doc/Compliance_&_Risk_Statement.md` for the full declaration.
 
