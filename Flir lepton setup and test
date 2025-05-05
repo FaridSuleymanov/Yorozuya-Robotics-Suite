@@ -1,0 +1,122 @@
+Full Setup Guide: FLIR Lepton 3.5 + PureThermal Mini + Jetson Nano + OpenCV
+✅ 1. Hardware Required
+FLIR Lepton 3.5 thermal camera module
+
+PureThermal Mini USB board (GroupGets / GetLab)
+
+Short, shielded USB-A to micro-USB cable
+
+Jetson Nano (with barrel jack power supply — 5V ⎓ 4A minimum recommended)
+
+Optional: mini tripod or 3D-printed mount
+
+✅ 2. Connect Hardware
+Gently insert the Lepton 3.5 into the PureThermal Mini socket (pin-1 side aligned — dot on Lepton should match notch on socket).
+
+Plug the micro-USB cable into the PureThermal Mini.
+
+Plug the other end into the full-size USB-A port on the Jetson Nano.
+
+Power the Nano from a 5V ⎓ 4A barrel jack with J48 jumper ON to enable full USB power.
+
+✅ 3. Verify Device Detection
+Run this command in the Jetson terminal:
+
+bash
+lsusb | grep -i 1e4e
+You should see:
+
+makefile
+1e4e:0100 GroupGets PureThermal Mini
+If not, try another cable or powered USB hub.
+
+✅ 4. Install Required Software
+Run these all in the terminal:
+
+bash
+sudo apt update
+sudo apt install -y python3-opencv python3-numpy v4l-utils
+Explanation:
+
+python3-opencv → lets Python use camera frames, color maps, etc.
+
+python3-numpy → needed for matrix math and image normalization
+
+v4l-utils → helps debug and check video formats
+
+✅ 5. Check Video Capabilities
+Run:
+
+bash
+v4l2-ctl --list-devices
+Look for:
+
+scss
+PureThermal (fw:v1.3.0) (usb-...):
+	/dev/video1
+
+Then check formats:
+
+bash
+v4l2-ctl -d /dev/video1 --list-formats-ext
+Look for:
+
+'Y16 ' – 16-bit grayscale
+
+'GREY' – 8-bit grayscale
+
+✅ 6. Save the OpenCV Viewer Script
+Create the script using nano or gedit:
+
+bash
+nano lepton_view.py
+Paste this code:
+
+python
+import cv2
+import numpy as np
+
+cap = cv2.VideoCapture('/dev/video1', cv2.CAP_V4L2)
+cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'Y16 '))
+cap.set(cv2.CAP_PROP_FRAME_WIDTH, 160)
+cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 120)
+cap.set(cv2.CAP_PROP_FPS, 9)
+
+print("Opening Lepton stream...")
+
+while True:
+    ret, frame = cap.read()
+    if not ret:
+        print("⚠️ Frame not received")
+        break
+
+    # Normalize 16-bit grayscale to 8-bit
+    norm = cv2.normalize(frame, None, 0, 255, cv2.NORM_MINMAX)
+    norm = np.uint8(norm)
+
+    # Optional: add false color
+    color = cv2.applyColorMap(norm, cv2.COLORMAP_JET)
+
+    cv2.imshow('Thermal View (press q to quit)', color)
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+        break
+
+cap.release()
+cv2.destroyAllWindows()
+Save with Ctrl+O, press Enter, then exit with Ctrl+X.
+
+✅ 7. Run the Viewer
+bash
+python3 lepton_view.py
+You should see:
+
+A live thermal preview in false color
+
+Warmer objects = red/yellow, cooler = blue
+
+Press Q to quit
+
+🔄 Optional: Auto-run on boot (for field deployment)
+You can make this script run at boot by creating a desktop shortcut or adding it to a systemd service.
+
+

@@ -1,0 +1,151 @@
+Raspberry Pi Camera v2 (IMX219) on Jetson Nano – Full Setup & Testing Guide
+📦 What You Need
+Item	Notes
+Raspberry Pi Camera v2	Based on the Sony IMX219 sensor
+CSI ribbon cable	Included with most Pi cameras
+Jetson Nano (4GB/2GB)	Any model works
+5V 4A barrel jack power	Required for stable CSI operation
+Heatsink / fan	Recommended to prevent OC throttling
+
+🧷 1. Connect the Camera
+Power off the Jetson Nano completely.
+
+Open the CSI camera connector latch.
+
+Insert the ribbon with:
+
+Contacts facing the HDMI port
+
+Blue side facing the Ethernet port
+
+Close the black latch to secure the ribbon.
+
+Power on the Nano.
+
+🔧 2. Enable the IMX219 Camera Overlay
+Run:
+
+bash
+sudo /opt/nvidia/jetson-io/jetson-io.py
+In the interactive menu:
+
+Select: Configure Jetson 40-pin Header
+
+Then: Configure CSI
+
+Select: Camera IMX219 Dual
+
+Choose: Save and Exit
+
+Reboot when prompted.
+
+✅ This loads the correct device tree overlays for the camera.
+
+🔍 3. Confirm Camera Is Detected
+After reboot:
+
+bash
+v4l2-ctl --list-devices
+Expected output:
+
+less
+vi-output, imx219 8-0010 (platform:54080000.vi:4):
+	/dev/video0
+This confirms the CSI interface, device tree, and kernel driver are working.
+
+🔁 4. Restart the Argus Camera Daemon
+Do this every time you plug or reconfigure a CSI camera:
+
+bash
+sudo systemctl restart nvargus-daemon
+No output means success.
+
+📷 5. Run NVIDIA’s Camera Capture Tool
+This uses the full Jetson ISP pipeline:
+
+bash
+nvgstcapture-1.0 --sensor-id=0 --automate
+You should see:
+
+A live camera preview window
+
+An image automatically captured to disk
+
+Press Ctrl+C to quit.
+
+🎞️ 6. Try a GStreamer Test (Live Preview)
+Run:
+
+bash
+gst-launch-1.0 nvarguscamerasrc ! \
+'video/x-raw(memory:NVMM),width=1280,height=720,framerate=30/1' ! \
+nvvidconv ! nvoverlaysink
+This command uses:
+
+nvarguscamerasrc → Jetson camera source
+
+nvvidconv → format conversion
+
+nvoverlaysink → GPU overlay for preview
+
+✅ You should see a fast, GPU-accelerated live camera feed.
+
+🧪 7. Access via OpenCV (Python)
+Create this script:
+
+bash
+nano pi_camera_view.py
+
+python
+import cv2
+
+# Use GStreamer pipeline
+gst_str = (
+    "nvarguscamerasrc ! "
+    "video/x-raw(memory:NVMM), width=1280, height=720, framerate=30/1 ! "
+    "nvvidconv ! video/x-raw, format=(string)BGRx ! "
+    "videoconvert ! video/x-raw, format=(string)BGR ! appsink"
+)
+
+cap = cv2.VideoCapture(gst_str, cv2.CAP_GSTREAMER)
+
+if not cap.isOpened():
+    print("❌ Cannot open Pi camera.")
+    exit()
+
+while True:
+    ret, frame = cap.read()
+    if not ret:
+        print("⚠️ Frame not received.")
+        break
+
+    cv2.imshow("Raspberry Pi Cam v2", frame)
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+        break
+
+cap.release()
+cv2.destroyAllWindows()
+
+Run it with:
+
+bash
+python3 pi_camera_view.py
+✅ This gives you OpenCV access to the Pi cam via GStreamer.
+
+🛠 Troubleshooting
+Problem	Likely Cause	Fix
+No /dev/video0	Ribbon cable flipped	Re-seat cable, reboot
+nvarguscamerasrc not found	Missing JetPack install	Reflash with full JetPack image
+nvgstcapture hangs	Argus stuck	sudo systemctl restart nvargus-daemon
+Preview is black	Scene too dark / exposure too short	Add light / tweak exposure if needed
+
+➕ Optional: What You Can Do Next
+Save video to file using OpenCV or GStreamer
+
+Run object detection or tracking on frames
+
+Stream video over ROS 2 using image_tools
+
+Synchronize Pi camera + FLIR Lepton in same window
+
+Detect movement / track drones visually
