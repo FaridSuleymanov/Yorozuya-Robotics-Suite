@@ -1,0 +1,60 @@
+1 Update & install a few utilities (~30 s)
+bash
+sudo apt update
+sudo apt install -y git wget rfkill pciutils
+These tools let us check PCI devices, firmware blobs and RF-kill status.
+
+2 Add the up-to-date firmware blobs (~1 min)
+bash
+cd /tmp
+git clone --depth=1 https://git.kernel.org/pub/scm/linux/kernel/git/firmware/linux-firmware.git
+sudo cp linux-firmware/iwlwifi-8265-* /lib/firmware/
+sudo update-initramfs -u     # optional but keeps future reboots clean
+Copies versions 31–36 of iwlwifi-8265-xx.ucode (any ≥31 works on JP 4.6.3).
+
+3 Load the in-tree driver (instant)
+bash
+sudo modprobe iwlwifi
+If you see no errors, the interface is alive.
+Keep it loaded after every boot:
+
+bash
+echo iwlwifi | sudo tee /etc/modules-load.d/iwlwifi.conf
+4 Verify the driver & firmware
+bash
+dmesg | grep iwlwifi | tail
+Typical success lines:
+
+yaml
+iwlwifi 0000:01:00.0: loaded firmware version 36.77d01142.0 op_mode iwlmvm
+iwlwifi 0000:01:00.0: Detected Intel(R) Dual Band Wireless AC 8265, REV=0x230
+Check PCI binding:
+
+bash
+lspci -nnk | grep -A3 8265
+# -> Kernel driver in use: iwlwifi
+5 Bring the interface up & connect
+bash
+sudo systemctl restart NetworkManager   # ensure NM sees the new device
+
+nmcli device wifi list                  # scan networks
+nmcli device wifi connect "<SSID>" password "<passphrase>"
+or use the Ubuntu GUI Wi-Fi menu.
+
+6 Troubleshooting table
+Symptom	Quick check	Fix
+modprobe iwlwifi errors “unknown symbol”	Kernel headers mismatch	Reboot first, then re-modprobe
+dmesg shows “failed to load firmware”	`ls /lib/firmware	grep 8265`
+RF-kill blocked	rfkill list all shows “Soft blocked: yes”	sudo rfkill unblock wifi
+Interface disappears after reboot	/etc/modules-load.d/iwlwifi.conf missing	Add line iwlwifi as in step 3
+
+One-liner for future setups
+bash
+sudo apt update
+sudo apt install -y git wget rfkill pciutils
+cd /tmp && \
+git clone --depth=1 https://git.kernel.org/pub/scm/linux/kernel/git/firmware/linux-firmware.git && \
+sudo cp linux-firmware/iwlwifi-8265-* /lib/firmware/ && \
+echo iwlwifi | sudo tee /etc/modules-load.d/iwlwifi.conf && \
+sudo modprobe iwlwifi && \
+sudo systemctl restart NetworkManager
