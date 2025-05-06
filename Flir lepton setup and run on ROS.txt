@@ -1,0 +1,135 @@
+Prerequisites checklist
+Item	Version / notes
+JetPack	4.x (Ubuntu 18.04 - arm64)
+PureThermal firmware	≥ 1.3.0 (shows Y16 in v4l2-ctl)
+Jetson power	5 V 4 A barrel jack, J48 jumper ON
+ROS Melodic	installed from packages.ros.org
+Workspace	~/catkin_ws (standard layout)
+
+1 — Verify the camera at the Linux layer
+bash
+# board enumerates on USB
+lsusb | grep -i 1e4e     # → 1e4e:0100 GroupGets PureThermal Mini
+
+# which /dev/video node?
+v4l2-ctl --list-devices  # → PureThermal …  /dev/video1
+Confirm the Y16 format is offered:
+
+bash
+v4l2-ctl -d /dev/video1 --list-formats-ext
+# should list 'Y16 ' 160×120 @ 9 fps
+2 — Install required packages
+bash
+sudo apt update
+sudo apt install python3-opencv python3-numpy \
+                 v4l-utils ros-melodic-video-stream-opencv \
+                 ros-melodic-rqt-image-view
+# ensure your user can open /dev/video1 without sudo
+sudo usermod -aG video $USER
+Log out / reboot once to activate the new group membership.
+
+3 — Create a tiny “launch-only” package
+bash
+cd ~/catkin_ws/src
+catkin_create_pkg my_cam_launch std_msgs rospy roscpp
+mkdir -p my_cam_launch/launch
+4 — Write the Lepton launch file
+bash
+cat > ~/catkin_ws/src/my_cam_launch/launch/lepton_vso.launch <<'EOF'
+<launch>
+  <node pkg="video_stream_opencv" type="video_stream" name="lepton">
+
+    <!-- PureThermal device -->
+    <param name="video_stream_provider" value="/dev/video1"/>
+
+    <!-- EXACT sensor settings -->
+    <param name="pixel_format"  value="Y16 "/>  <!-- note trailing space -->
+    <param name="image_width"   value="160"/>
+    <param name="image_height"  value="120"/>
+
+    <!-- Sensor FPS -->
+    <param name="camera_fps"     value="9"/>
+    <param name="set_camera_fps" value="true"/>
+    <param name="fps"            value="9"/>
+
+    <!-- TF frame -->
+    <param name="frame_id" value="lepton"/>
+
+    <!-- publish raw only -->
+    <param name="image_transport" value="raw"/>
+  </node>
+</launch>
+EOF
+5 — (Re)build the workspace (just indexes files)
+bash
+cd ~/catkin_ws
+catkin_make
+echo 'source ~/catkin_ws/devel/setup.bash' >> ~/.bashrc   # optional convenience
+source ~/catkin_ws/devel/setup.bash
+6 — Run the camera
+6-A Start ROS master
+bash
+roscore
+(keep in its own terminal)
+
+6-B Launch the Lepton node
+bash
+source ~/catkin_ws/devel/setup.bash      # every ROS terminal needs this
+roslaunch my_cam_launch lepton_vso.launch
+You should see:
+
+less
+[ INFO] Opened video stream provider: /dev/video1
+[ INFO] Publishing image_raw (mono16) at 9 FPS
+6-C Verify the topic
+bash
+rostopic hz /lepton/image_raw     # reports ~9.0 Hz
+6-D View the stream
+bash
+rosrun rqt_image_view rqt_image_view
+# choose /lepton/image_raw  → false-colour thermal window
+(rqt automatically colourises 16-bit mono streams)
+
+7 — Basic ROS commands reference
+Purpose	Command
+List all topics	rostopic list
+Show frame rate	rostopic hz /lepton/image_raw
+Inspect message fields	rostopic echo -n1 /lepton/image_raw
+Record bag	rosbag record /lepton/image_raw -O lepton.bag
+Kill everything	`rosnode kill -a && killall -q roscore rosmaster video_stream
+
+8 — (Option) add the Raspberry-Pi CSI camera
+Restart camera daemon (once per boot):
+
+bash
+sudo systemctl restart nvargus-daemon
+Launch:
+
+bash
+roslaunch my_cam_launch pi_cam_vso.launch
+View:
+
+New rqt window → choose /pi_cam/image_raw.
+
+9 — Troubleshooting quick table
+Symptom	Fix
+Unable to start pipeline / VIDIOC_DQBUF	Pixel-format not exactly Y16 → correct launch file.
+Topic missing	Node not running or opens wrong device → check /dev/video?, permissions, kill other apps (fuser -v /dev/video1).
+Viewer black	Wrong topic in rqt; pick /lepton/image_raw.
+“no new messages” in rostopic hz	Sensor not outputting → bad cable/USB power or another process holds the camera.
+
+10 — One-command convenience launch (cam + viewer)
+xml
+<!-- ~/catkin_ws/src/my_cam_launch/launch/lepton_with_view.launch -->
+<launch>
+  <include file="$(find my_cam_launch)/launch/lepton_vso.launch"/>
+  <node pkg="rqt_image_view" type="rqt_image_view" name="lepton_gui">
+    <param name="image" value="/lepton/image_raw"/>
+  </node>
+</launch>
+Run:
+
+bash
+Copy
+Edit
+roslaunch my_cam_launch lepton_with_view.launch
