@@ -173,7 +173,14 @@ void loop(){
       String tl;
       tl.reserve(220);
       tl += "Gyro X:" + String(gX,1) + " Y:" + String(gY,1) + " Z:" + String(gZ,1);
-      tl += " | GPS:"  + String(gps.location.isValid() ? "OK" : "NV");
+      tl += " | GPS:";
+      if (gps.location.isValid()) {
+      tl += String(gps.location.lat(),6) + "," +
+          String(gps.location.lng(),6);
+      } 
+      else {
+      tl += "NotValid";
+      }
       tl += " | Compass:" + String(heading,1) + "deg";
       tl += " | Joy:" + computeJoyDir(data.map2X,data.map2Y);
       tl += " | Fan:"   + String(digitalRead(coolingfan_Pin)==LOW ? "OFF":"ON");
