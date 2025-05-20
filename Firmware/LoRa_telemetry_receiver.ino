@@ -1,4 +1,4 @@
-#include "LoRa_E32.h"
+#include "LoRa_E32.h" // for LoRa SX12878 433 MHz E32-433T20D TTL-100
 
 #define LORA_M0  27
 #define LORA_M1  28
