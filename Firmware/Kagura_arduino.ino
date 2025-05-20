@@ -107,6 +107,27 @@ void ISR_encoder2A() {
   lastStateA2 = currentStateA2;
 }
 
+// ---- NEW helper  -----------------------------------------
+void updateMotorRelaysFromSwitch() {
+  /*
+     INPUT_PULLUP means:
+       • switch OPEN  ➜ pin HIGH
+       • switch CLOSED ➜ pin LOW   (we’ll call this “ON”)
+     The motor-power relays are ACTIVE-LOW (LOW = energised). ❶❷
+     When the switch is ON we want to CUT power, so we drive the relay
+     inputs HIGH; when the switch is OFF we allow power by driving LOW.
+  */
+  bool engineSwitchOn = (digitalRead(MOTOR_SWITCH_PIN) == HIGH); // closed → ON
+  if (engineSwitchOn) {                 // cut power
+    digitalWrite(MOTOR_RELAY_IN1_PIN, HIGH);
+    digitalWrite(MOTOR_RELAY_IN2_PIN, HIGH);
+  } else {                              // supply power
+    digitalWrite(MOTOR_RELAY_IN1_PIN, LOW);
+    digitalWrite(MOTOR_RELAY_IN2_PIN, LOW);
+  }
+}
+
+
 ///////////////////////////////////////////////////////
 //                      Setup
 ///////////////////////////////////////////////////////
@@ -148,8 +169,7 @@ void setup() {
   digitalWrite(alarmrelay_Pin, HIGH);
   digitalWrite(lightsrelay_Pin, LOW);
 
-  digitalWrite(MOTOR_RELAY_IN1_PIN, HIGH);
-  digitalWrite(MOTOR_RELAY_IN2_PIN, HIGH);
+  updateMotorRelaysFromSwitch();   // set correct power state at boot
   
   // MPU6050 initialization
   byte status = mpu.begin();
@@ -172,7 +192,7 @@ void setup() {
 //                      Loop
 ///////////////////////////////////////////////////////
 void loop() {
-  
+  updateMotorRelaysFromSwitch();
   // --- Update MPU6050 data and apply low-pass filter ---
   mpu.update();
   float rawX = mpu.getGyroX();
