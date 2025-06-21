@@ -1,5 +1,5 @@
 # Yorozuya-Robotics-Suite
-*A family of civilian, open‑source robotic platforms for ground, turret and aerial operations*
+*A family of civilian, open‑source robotic platforms for ground and air operations*
 
 **License:** GPL‑3.0   •   **Maintainer:** Farid Suleymanov   •   **Development status:** Early stage, prototypes only   •   **Last update:** 2025‑04‑27
 
