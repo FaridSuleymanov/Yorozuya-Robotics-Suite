@@ -22,7 +22,7 @@ All hardware is built entirely from commercially available, unrestricted parts a
 ## 2  Hardware Matrix
 | System | MCU / FC | Companion SBC | Propulsion / Actuation | Core Sensors | Primary Radio |
 |--------|----------|---------------|------------------------|--------------|---------------|
-| Kagura | Arduino Mega 2560 | NVIDIA Jetson Xavier NX | Dual DC motors via Cytron MD30C | MPU‑6050, GPS, dual encoders, HMC5883L | nRF24L01+ |
+| Kagura | Arduino Mega 2560 | Jetson Orin Nano | Dual DC motors via Cytron MD30C | MPU‑6050, GPS, dual encoders, HMC5883L | nRF24L01+ |
 | YATO‑Umbrella | Arduino Mega 2560 | Jetson Orin Nano | 2‑axis steppers (DM542, DM860H) + dual servos | FLIR Lepton, RPi HQ‑Cam, laser rangefinder, dual MPU‑6050 | nRF24L01+ |
 | Okita | Pixhawk‑compatible FC | (Opt.) Jetson Orin Nano | Twin 90 mm EDF + solid rocket booster | Dual IMU, ADS‑B receiver | 900 MHz SiK |
 
