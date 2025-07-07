@@ -1,0 +1,57 @@
+#include "LoRa_E32.h" // for LoRa SX12878 433 MHz E32-433T20D TTL-100
+
+#define LORA_M0  30
+#define LORA_M1  31
+#define LORA_AUX 32          // use -1 if AUX not wired
+
+LoRa_E32 e32(&Serial3, LORA_AUX, LORA_M0, LORA_M1);
+
+void setup() {
+  Serial.begin(115200);       // USB console
+  Serial3.begin(9600);
+
+  pinMode(LORA_M0, OUTPUT);
+  pinMode(LORA_M1, OUTPUT);
+  digitalWrite(LORA_M0, LOW);
+  digitalWrite(LORA_M1, LOW);
+
+  if (!e32.begin()) {
+    Serial.println(F("LoRa init failed"));
+    while (1);
+  }
+  Serial.println(F("LoRa module ready (TX & RX)"));
+}
+
+void loop() {
+  static unsigned long lastSendTime = 0;
+  const unsigned long sendInterval = 5000; // Send every 5 seconds
+
+  // Sending "hello" periodically
+  if (millis() - lastSendTime >= sendInterval) {
+    lastSendTime = millis();
+    
+    Serial.println("Sending: hello");
+    ResponseStatus rs = e32.sendMessage("hello");
+    
+    // Check the response status
+    if (rs.code == 1) {
+      Serial.println("Message sent successfully");
+    } else {
+      Serial.print("Send failed, error code: ");
+      Serial.println(rs.getResponseDescription());
+    }
+  }
+
+  // Receiving any incoming messages
+  if (Serial3.available()) {
+    String receivedMessage = "";
+    while (Serial3.available()) {
+      char c = Serial3.read();
+      receivedMessage += c;
+      // Small delay to allow next byte to arrive
+      delay(1);
+    }
+    Serial.print("Received: ");
+    Serial.println(receivedMessage);
+  }
+}
